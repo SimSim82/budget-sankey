@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Budget Sankey</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #0f1117; color: #e0e0e0; overflow-x: hidden;
+}
+#hdr {
+  padding: 16px 28px 12px; display: flex; align-items: center; gap: 14px;
+  border-bottom: 1px solid #1c1f2e;
+}
+#back {
+  display: none; background: #1c1f2e; border: 1px solid #2e3148;
+  color: #ccc; padding: 5px 13px; border-radius: 6px; cursor: pointer; font-size: 13px;
+}
+#back:hover { background: #252838; }
+#ttl  { font-size: 1.05rem; font-weight: 600; }
+#sub  { font-size: .78rem; color: #666; margin-top: 3px; }
+.tip  {
+  position: fixed; background: #1c1f2e; border: 1px solid #2e3148;
+  padding: 7px 12px; border-radius: 6px; font-size: 12px; line-height: 1.7;
+  pointer-events: none; opacity: 0; transition: opacity .12s; z-index: 50; max-width: 270px;
+}
+</style>
+</head>
+<body>
+<div id="hdr">
+  <button id="back" onclick="goBack()">&#8592; Retour</button>
+  <div><div id="ttl">Budget</div><div id="sub"></div></div>
+</div>
+<svg id="sv"></svg>
+<div class="tip" id="tip"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+const DATA = {"cycle": "Avr 28→Mai 27", "salaire": 2188.48, "epargne": 300.0, "solde": -109.14, "categories": {"🎭 Loisirs": {"total": 631.44, "transactions": [{"nom": "📺 Écran OLED — Paiement 4x (3/4)", "date": "2026-06-30", "montant": 159.49}, {"nom": "📺 Écran OLED — Paiement 4x (2/4)", "date": "2026-05-30", "montant": 159.49}, {"nom": "🎭 Nine Toulouse", "date": "2026-05-26", "montant": 14.0}, {"nom": "🎭 Fitness Park Montauban", "date": "2026-05-20", "montant": 35.0}, {"nom": "🎫 Shotgun", "date": "2026-05-11", "montant": 39.99}, {"nom": "🎮 WAND WeMod — Logiciel jeu", "date": "2026-05-04", "montant": 54.99}, {"nom": "🎮 Steam — Jeu vidéo", "date": "2026-05-04", "montant": 8.99}, {"nom": "📺 Écran OLED — Paiement 4x (1/4)", "date": "2026-04-30", "montant": 159.49}]}, "🛒 Courses": {"total": 379.05, "transactions": [{"nom": "🛒 Leclerc", "date": "2026-05-26", "montant": 12.55}, {"nom": "🛒 Monoprix", "date": "2026-05-26", "montant": 16.5}, {"nom": "🛒 Courses Juliane Albiser", "date": "2026-04-28", "montant": 350.0}]}, "🛍️ Petites courses": {"total": 360.99, "transactions": [{"nom": "🛒 Courses Juliane Albiser", "date": "2026-05-14", "montant": 115.0}, {"nom": "🛍️ Leclerc Sodibag — Petites courses", "date": "2026-05-13", "montant": 140.98}, {"nom": "🛍️ La Pipe d'Or — Tabac Montauban", "date": "2026-05-11", "montant": 18.55}, {"nom": "🐰 Jardiland — Courses lapin", "date": "2026-05-11", "montant": 27.96}, {"nom": "🛍️ Monoprix — Petites courses", "date": "2026-05-11", "montant": 38.18}, {"nom": "📌 Paiements antérieurs au 28/04", "date": "2026-04-27", "montant": 20.32}]}, "🏥 Santé": {"total": 107.99, "transactions": [{"nom": "💪 Distriprot — Bouteille d'eau salle de sport", "date": "2026-05-11", "montant": 1.99}, {"nom": "💇 KIU Institut — Coiffeur", "date": "2026-05-11", "montant": 106.0}]}, "⛽ Carburant": {"total": 86.82, "transactions": [{"nom": "⛽ Station Paya", "date": "2026-05-21", "montant": 1.3}, {"nom": "⛽ Carburant — PETROLEC-LECLERC Montauban", "date": "2026-05-11", "montant": 25.05}, {"nom": "⛽ Carburant — PETROLEC SUD Montauban", "date": "2026-05-06", "montant": 29.98}, {"nom": "⛽ Carburant — PETROLEC SUD Montauban", "date": "2026-04-30", "montant": 30.49}]}, "🎁 Divers": {"total": 76.99, "transactions": [{"nom": "🎁 Jardiland Montauban", "date": "2026-05-26", "montant": 6.99}, {"nom": "🎁 Virement Juliane Albiser", "date": "2026-05-26", "montant": 20.0}, {"nom": "🎁 Virement Juliane Albiser", "date": "2026-05-19", "montant": 50.0}]}, "🛡️ Assurance": {"total": 69.12, "transactions": [{"nom": "🛡️ MACIF (assurance)", "date": "2026-05-20", "montant": 8.0}, {"nom": "🛡️ MAIF — Assurance", "date": "2026-05-07", "montant": 61.12}]}, "📱 Abonnements": {"total": 62.47, "transactions": [{"nom": "📱 Amazon Prime", "date": "2026-05-26", "montant": 6.99}, {"nom": "📱 Google Play", "date": "2026-05-18", "montant": 10.4}, {"nom": "🤖 Claude — Abonnement Google Play", "date": "2026-05-15", "montant": 22.11}, {"nom": "🎮 Crunchyroll", "date": "2026-05-11", "montant": 6.99}, {"nom": "🎬 Netflix", "date": "2026-05-11", "montant": 7.99}, {"nom": "🎥 YouTube Premium", "date": "2026-05-04", "montant": 7.99}]}, "🍔 Alimentation": {"total": 54.69, "transactions": [{"nom": "🍔 Papaella (SumUp)", "date": "2026-05-26", "montant": 4.0}, {"nom": "🍔 McDonald's Seilh", "date": "2026-05-26", "montant": 10.35}, {"nom": "🍔 Cuisine Cherry Negre", "date": "2026-05-26", "montant": 20.0}, {"nom": "🍔 Domino's Pizza Montauban", "date": "2026-05-19", "montant": 1.89}, {"nom": "🥖 Fil'au Pain — Muret", "date": "2026-05-07", "montant": 6.45}, {"nom": "🍕 La Cave à Pizza", "date": "2026-05-05", "montant": 12.0}]}, "🚗 Transport": {"total": 38.55, "transactions": [{"nom": "🚗 Super Jet Montauban (lavage)", "date": "2026-05-27", "montant": 10.0}, {"nom": "🔧 Leclerc Audis — Centre auto Montauban", "date": "2026-05-11", "montant": 8.55}, {"nom": "🚗 Superjet Sapiac — Car wash", "date": "2026-05-06", "montant": 20.0}]}, "☕ Pause": {"total": 37.0, "transactions": [{"nom": "☕ Pauses café/snack — DA 47 & NYX Sodex", "date": "2026-05-28", "montant": 37.0}]}, "📞 Téléphonie": {"total": 34.98, "transactions": [{"nom": "📱 Bouygues Telecom", "date": "2026-05-13", "montant": 22.99}, {"nom": "📱 NRJ Mobile", "date": "2026-05-11", "montant": 11.99}]}, "🛣️ Péages": {"total": 34.9, "transactions": [{"nom": "🛣️ Péages autoroute ASF", "date": "2026-05-28", "montant": 9.3}, {"nom": "🛣️ Péages ASF", "date": "2026-05-13", "montant": 25.6}]}, "🏦 Crédit": {"total": 16.63, "transactions": [{"nom": "🏦 Younited Credit — Mensualité", "date": "2026-05-04", "montant": 16.63}]}, "🏦 Frais bancaires": {"total": 6.0, "transactions": [{"nom": "🏦 Cotisation bancaire — Offre Essentiel", "date": "2026-05-03", "montant": 6.0}]}}};
+
+// ── Color map ─────────────────────────────────────────────────────────────────
+const PRESET = {
+  "🛣️ Péages":           "#e67e22",
+  "🛒 Petites courses":             "#27ae60",
+  "☕ Pause":                             "#c0392b",
+  "🛒 Courses":                     "#2ecc71",
+  "🍔 Alimentation":                "#e74c3c",
+  "📱 Abonnements":                 "#9b59b6",
+  "🎭 Loisirs":                     "#3498db",
+  "👗 Shopping":                    "#e91e63",
+  "🏠 Logement":                    "#8d6e63",
+  "⛽ Carburant":                         "#ffa726",
+  "🛡️ Assurance":             "#78909c",
+  "📞 Téléphonie":        "#00bcd4",
+  "🏦 Crédit":                 "#ef5350",
+  "🏦 Frais bancaires":             "#9e9e9e",
+  "📚 Formation":                   "#66bb6a",
+  "🔄 Remboursement":               "#26a69a",
+  "💹 Épargne":                "#42a5f5",
+  "💰 Solde":                       "#66bb6a",
+  "🎁 Divers":                      "#78909c",
+};
+const _cm = {};
+let   _ci = 0;
+function col(name) {
+  for (const k of Object.keys(PRESET)) {
+    if (name.includes(k.replace(/️/g,""))) return PRESET[k];
+  }
+  if (!_cm[name]) _cm[name] = d3.schemeTableau10[_ci++ % 10];
+  return _cm[name];
+}
+
+function fmt(n) {
+  return n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function trunc(s, max) { return s.length > max ? s.slice(0, max - 1) + "…" : s; }
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let view = null; // null = global view, string = category name
+
+function goBack() { view = null; render(); }
+
+// ── Layout ────────────────────────────────────────────────────────────────────
+function layout(nodes, total, ih, minH) {
+  const gap = 6;
+  const totalGap = gap * (nodes.length - 1);
+  const avail = ih - totalGap;
+
+  let items = nodes.map(n => ({ ...n, h: (n.value / total) * avail }));
+
+  // Enforce minimum height
+  let fixedSum = 0, flexSum = 0;
+  items = items.map(n => {
+    if (n.h < minH) { fixedSum += minH; return { ...n, h: minH, _fixed: true }; }
+    flexSum += n.h;
+    return { ...n, _fixed: false };
+  });
+  const flexAvail = avail - fixedSum;
+  if (flexAvail > 0 && flexSum > 0) {
+    const scale = flexAvail / flexSum;
+    items = items.map(n => n._fixed ? n : { ...n, h: n.h * scale });
+  }
+
+  let y = 0;
+  return items.map(n => { const r = { ...n, y }; y += n.h + gap; return r; });
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+const ML = 180, MR = 290, MT = 28, MB = 28, NW = 16;
+
+function render() {
+  const isG = (view === null);
+  document.getElementById("back").style.display = isG ? "none" : "inline-block";
+
+  const { cycle, salaire, epargne, solde, categories } = DATA;
+  let srcLabel, srcColor, nodes;
+
+  if (isG) {
+    const dep = salaire - epargne - Math.max(0, solde);
+    document.getElementById("ttl").textContent = "Budget — " + cycle;
+    document.getElementById("sub").textContent =
+      "Salaire : " + fmt(salaire) + " €  ·  " +
+      "Dépenses : " + fmt(dep) + " €  ·  " +
+      "Épargne : " + fmt(epargne) + " €";
+    srcLabel = "💹 Salaire";
+    srcColor = "#4caf50";
+    nodes = Object.entries(categories).map(([k, v]) => ({ name: k, value: v.total, clickable: true }));
+    nodes.sort((a, b) => b.value - a.value);
+    if (epargne > 0) nodes.push({ name: "💵 Épargne", value: epargne, clickable: false });
+    if (solde   > 0) nodes.push({ name: "💰 Solde",        value: solde,   clickable: false });
+  } else {
+    const cat = categories[view];
+    document.getElementById("ttl").textContent = view;
+    document.getElementById("sub").textContent =
+      cat.transactions.length + " transaction(s) · Total : " + fmt(cat.total) + " €";
+    srcLabel = view;
+    srcColor = col(view);
+    nodes = cat.transactions.map(tx => ({
+      name: tx.nom, value: tx.montant, sub: tx.date, clickable: false,
+    }));
+  }
+
+  const total = nodes.reduce((s, n) => s + n.value, 0);
+  if (!total) return;
+
+  const W    = window.innerWidth;
+  const minH = isG ? 8 : 18;
+  const minH_total = nodes.length * (minH + 6) + MT + MB + 40;
+  const H    = Math.max(window.innerHeight - 62, minH_total);
+  const IH   = H - MT - MB;
+  const IW   = W - ML - MR;
+
+  const sv = d3.select("#sv").attr("width", W).attr("height", H);
+  sv.selectAll("*").remove();
+  const g = sv.append("g").attr("transform", "translate(" + ML + "," + MT + ")");
+
+  const laid = layout(nodes, total, IH, minH);
+  const tip  = document.getElementById("tip");
+
+  // Source node
+  g.append("rect")
+    .attr("x", 0).attr("y", 0).attr("width", NW).attr("height", IH)
+    .attr("fill", srcColor).attr("rx", 3);
+  g.append("text")
+    .attr("x", -9).attr("y", IH / 2 - 7)
+    .attr("text-anchor", "end").attr("dominant-baseline", "middle")
+    .attr("fill", "#e0e0e0").attr("font-size", 13)
+    .text(srcLabel);
+  g.append("text")
+    .attr("x", -9).attr("y", IH / 2 + 9)
+    .attr("text-anchor", "end").attr("dominant-baseline", "middle")
+    .attr("fill", "#666").attr("font-size", 11)
+    .text(fmt(total) + " €");
+
+  // Links and right nodes
+  let sy = 0;
+  laid.forEach(nd => {
+    const c   = col(nd.name);
+    const lh  = (nd.value / total) * IH;
+    const rx  = IW, ry = nd.y, rh = nd.h, mx = IW / 2;
+
+    const path =
+      "M" + NW + "," + sy +
+      " C" + mx + "," + sy + " " + mx + "," + ry + " " + rx + "," + ry +
+      " L" + rx + "," + (ry + rh) +
+      " C" + mx + "," + (ry + rh) + " " + mx + "," + (sy + lh) + " " + NW + "," + (sy + lh) +
+      " Z";
+    sy += lh;
+
+    // Ribbon
+    const lk = g.append("path")
+      .attr("d", path)
+      .attr("fill", c)
+      .attr("fill-opacity", 0.3)
+      .style("cursor", nd.clickable ? "pointer" : "default")
+      .on("mousemove", function(ev) {
+        tip.style.opacity = 1;
+        tip.style.left = (ev.clientX + 12) + "px";
+        tip.style.top  = (ev.clientY - 38) + "px";
+        tip.innerHTML  =
+          "<b>" + nd.name + "</b>" +
+          (nd.sub ? "<br><span style='color:#888'>" + nd.sub + "</span>" : "") +
+          "<br>" + fmt(nd.value) + " €";
+      })
+      .on("mouseleave", function() { tip.style.opacity = 0; });
+
+    if (nd.clickable) {
+      lk.on("mouseenter", function() { d3.select(this).attr("fill-opacity", 0.55); })
+        .on("mouseleave", function() { d3.select(this).attr("fill-opacity", 0.3); tip.style.opacity = 0; })
+        .on("click", function() { view = nd.name; render(); });
+    }
+
+    // Right node rect
+    const rct = g.append("rect")
+      .attr("x", rx).attr("y", ry)
+      .attr("width", NW).attr("height", Math.max(rh, 2))
+      .attr("fill", c).attr("rx", 3)
+      .style("cursor", nd.clickable ? "pointer" : "default");
+    if (nd.clickable) rct.on("click", function() { view = nd.name; render(); });
+
+    // Labels
+    const lby = ry + rh / 2;
+    const hasDate = !!nd.sub;
+
+    const lbl = g.append("text")
+      .attr("x", rx + NW + 8).attr("y", lby - (hasDate ? 7 : 0))
+      .attr("dominant-baseline", "middle")
+      .attr("fill", "#e0e0e0").attr("font-size", 12)
+      .style("cursor", nd.clickable ? "pointer" : "default")
+      .text(trunc(nd.name, 34));
+    if (nd.clickable) lbl.on("click", function() { view = nd.name; render(); });
+
+    g.append("text")
+      .attr("x", rx + NW + 8).attr("y", lby + (hasDate ? 8 : 0))
+      .attr("dominant-baseline", "middle")
+      .attr("fill", "#666").attr("font-size", 10)
+      .text((nd.sub ? nd.sub + "  " : "") + fmt(nd.value) + " €");
+  });
+}
+
+window.addEventListener("resize", render);
+render();
+</script>
+</body>
+</html>
