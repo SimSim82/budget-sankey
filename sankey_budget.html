@@ -3,29 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Budget Sankey</title>
+<title>Budget</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #0f1117; color: #e0e0e0; overflow-x: hidden;
-}
-#hdr {
-  padding: 16px 28px 12px; display: flex; align-items: center; gap: 14px;
-  border-bottom: 1px solid #1c1f2e;
-}
-#back {
-  display: none; background: #1c1f2e; border: 1px solid #2e3148;
-  color: #ccc; padding: 5px 13px; border-radius: 6px; cursor: pointer; font-size: 13px;
-}
-#back:hover { background: #252838; }
-#ttl  { font-size: 1.05rem; font-weight: 600; }
-#sub  { font-size: .78rem; color: #666; margin-top: 3px; }
-.tip  {
-  position: fixed; background: #1c1f2e; border: 1px solid #2e3148;
-  padding: 7px 12px; border-radius: 6px; font-size: 12px; line-height: 1.7;
-  pointer-events: none; opacity: 0; transition: opacity .12s; z-index: 50; max-width: 270px;
-}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',sans-serif;background:#0d0d0d;color:#fff;overflow-x:hidden}
+#hdr{padding:28px 36px 18px;display:flex;align-items:center;gap:16px}
+#back{display:none;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.7);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:13px;letter-spacing:.01em;transition:background .15s}
+#back:hover{background:rgba(255,255,255,.12)}
+#ttl{font-size:15px;font-weight:500;color:rgba(255,255,255,.88);letter-spacing:.01em}
+#sub{font-size:12px;color:rgba(255,255,255,.28);margin-top:5px;letter-spacing:.01em}
+#sv{display:block}
+svg text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',sans-serif}
+.tip{position:fixed;background:#141414;border:1px solid rgba(255,255,255,.1);padding:10px 14px;border-radius:10px;font-size:12px;line-height:1.8;pointer-events:none;opacity:0;transition:opacity .1s;z-index:50;max-width:220px}
 </style>
 </head>
 <body>
@@ -35,211 +24,186 @@ body {
 </div>
 <svg id="sv"></svg>
 <div class="tip" id="tip"></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script>
-const DATA = {"cycle": "Avr 28→Mai 27", "salaire": 2188.48, "epargne": 300.0, "solde": -109.14, "categories": {"🎭 Loisirs": {"total": 631.44, "transactions": [{"nom": "📺 Écran OLED — Paiement 4x (3/4)", "date": "2026-06-30", "montant": 159.49}, {"nom": "📺 Écran OLED — Paiement 4x (2/4)", "date": "2026-05-30", "montant": 159.49}, {"nom": "🎭 Nine Toulouse", "date": "2026-05-26", "montant": 14.0}, {"nom": "🎭 Fitness Park Montauban", "date": "2026-05-20", "montant": 35.0}, {"nom": "🎫 Shotgun", "date": "2026-05-11", "montant": 39.99}, {"nom": "🎮 WAND WeMod — Logiciel jeu", "date": "2026-05-04", "montant": 54.99}, {"nom": "🎮 Steam — Jeu vidéo", "date": "2026-05-04", "montant": 8.99}, {"nom": "📺 Écran OLED — Paiement 4x (1/4)", "date": "2026-04-30", "montant": 159.49}]}, "🛒 Courses": {"total": 379.05, "transactions": [{"nom": "🛒 Leclerc", "date": "2026-05-26", "montant": 12.55}, {"nom": "🛒 Monoprix", "date": "2026-05-26", "montant": 16.5}, {"nom": "🛒 Courses Juliane Albiser", "date": "2026-04-28", "montant": 350.0}]}, "🛍️ Petites courses": {"total": 360.99, "transactions": [{"nom": "🛒 Courses Juliane Albiser", "date": "2026-05-14", "montant": 115.0}, {"nom": "🛍️ Leclerc Sodibag — Petites courses", "date": "2026-05-13", "montant": 140.98}, {"nom": "🛍️ La Pipe d'Or — Tabac Montauban", "date": "2026-05-11", "montant": 18.55}, {"nom": "🐰 Jardiland — Courses lapin", "date": "2026-05-11", "montant": 27.96}, {"nom": "🛍️ Monoprix — Petites courses", "date": "2026-05-11", "montant": 38.18}, {"nom": "📌 Paiements antérieurs au 28/04", "date": "2026-04-27", "montant": 20.32}]}, "🏥 Santé": {"total": 107.99, "transactions": [{"nom": "💪 Distriprot — Bouteille d'eau salle de sport", "date": "2026-05-11", "montant": 1.99}, {"nom": "💇 KIU Institut — Coiffeur", "date": "2026-05-11", "montant": 106.0}]}, "⛽ Carburant": {"total": 86.82, "transactions": [{"nom": "⛽ Station Paya", "date": "2026-05-21", "montant": 1.3}, {"nom": "⛽ Carburant — PETROLEC-LECLERC Montauban", "date": "2026-05-11", "montant": 25.05}, {"nom": "⛽ Carburant — PETROLEC SUD Montauban", "date": "2026-05-06", "montant": 29.98}, {"nom": "⛽ Carburant — PETROLEC SUD Montauban", "date": "2026-04-30", "montant": 30.49}]}, "🎁 Divers": {"total": 76.99, "transactions": [{"nom": "🎁 Jardiland Montauban", "date": "2026-05-26", "montant": 6.99}, {"nom": "🎁 Virement Juliane Albiser", "date": "2026-05-26", "montant": 20.0}, {"nom": "🎁 Virement Juliane Albiser", "date": "2026-05-19", "montant": 50.0}]}, "🛡️ Assurance": {"total": 69.12, "transactions": [{"nom": "🛡️ MACIF (assurance)", "date": "2026-05-20", "montant": 8.0}, {"nom": "🛡️ MAIF — Assurance", "date": "2026-05-07", "montant": 61.12}]}, "📱 Abonnements": {"total": 62.47, "transactions": [{"nom": "📱 Amazon Prime", "date": "2026-05-26", "montant": 6.99}, {"nom": "📱 Google Play", "date": "2026-05-18", "montant": 10.4}, {"nom": "🤖 Claude — Abonnement Google Play", "date": "2026-05-15", "montant": 22.11}, {"nom": "🎮 Crunchyroll", "date": "2026-05-11", "montant": 6.99}, {"nom": "🎬 Netflix", "date": "2026-05-11", "montant": 7.99}, {"nom": "🎥 YouTube Premium", "date": "2026-05-04", "montant": 7.99}]}, "🍔 Alimentation": {"total": 54.69, "transactions": [{"nom": "🍔 Papaella (SumUp)", "date": "2026-05-26", "montant": 4.0}, {"nom": "🍔 McDonald's Seilh", "date": "2026-05-26", "montant": 10.35}, {"nom": "🍔 Cuisine Cherry Negre", "date": "2026-05-26", "montant": 20.0}, {"nom": "🍔 Domino's Pizza Montauban", "date": "2026-05-19", "montant": 1.89}, {"nom": "🥖 Fil'au Pain — Muret", "date": "2026-05-07", "montant": 6.45}, {"nom": "🍕 La Cave à Pizza", "date": "2026-05-05", "montant": 12.0}]}, "🚗 Transport": {"total": 38.55, "transactions": [{"nom": "🚗 Super Jet Montauban (lavage)", "date": "2026-05-27", "montant": 10.0}, {"nom": "🔧 Leclerc Audis — Centre auto Montauban", "date": "2026-05-11", "montant": 8.55}, {"nom": "🚗 Superjet Sapiac — Car wash", "date": "2026-05-06", "montant": 20.0}]}, "☕ Pause": {"total": 37.0, "transactions": [{"nom": "☕ Pauses café/snack — DA 47 & NYX Sodex", "date": "2026-05-28", "montant": 37.0}]}, "📞 Téléphonie": {"total": 34.98, "transactions": [{"nom": "📱 Bouygues Telecom", "date": "2026-05-13", "montant": 22.99}, {"nom": "📱 NRJ Mobile", "date": "2026-05-11", "montant": 11.99}]}, "🛣️ Péages": {"total": 34.9, "transactions": [{"nom": "🛣️ Péages autoroute ASF", "date": "2026-05-28", "montant": 9.3}, {"nom": "🛣️ Péages ASF", "date": "2026-05-13", "montant": 25.6}]}, "🏦 Crédit": {"total": 16.63, "transactions": [{"nom": "🏦 Younited Credit — Mensualité", "date": "2026-05-04", "montant": 16.63}]}, "🏦 Frais bancaires": {"total": 6.0, "transactions": [{"nom": "🏦 Cotisation bancaire — Offre Essentiel", "date": "2026-05-03", "montant": 6.0}]}}};
+const DATA={"cycle": "Avr 28→Mai 27", "salaire": 2188.48, "epargne": 300.0, "solde": -109.14, "categories": {"🎭 Loisirs": {"total": 631.44, "transactions": [{"nom": "📺 Écran OLED — Paiement 4x (3/4)", "date": "2026-06-30", "montant": 159.49}, {"nom": "📺 Écran OLED — Paiement 4x (2/4)", "date": "2026-05-30", "montant": 159.49}, {"nom": "🎭 Nine Toulouse", "date": "2026-05-26", "montant": 14.0}, {"nom": "🎭 Fitness Park Montauban", "date": "2026-05-20", "montant": 35.0}, {"nom": "🎫 Shotgun", "date": "2026-05-11", "montant": 39.99}, {"nom": "🎮 WAND WeMod — Logiciel jeu", "date": "2026-05-04", "montant": 54.99}, {"nom": "🎮 Steam — Jeu vidéo", "date": "2026-05-04", "montant": 8.99}, {"nom": "📺 Écran OLED — Paiement 4x (1/4)", "date": "2026-04-30", "montant": 159.49}]}, "🛒 Courses": {"total": 379.05, "transactions": [{"nom": "🛒 Leclerc", "date": "2026-05-26", "montant": 12.55}, {"nom": "🛒 Monoprix", "date": "2026-05-26", "montant": 16.5}, {"nom": "🛒 Courses Juliane Albiser", "date": "2026-04-28", "montant": 350.0}]}, "🛍️ Petites courses": {"total": 360.99, "transactions": [{"nom": "🛒 Courses Juliane Albiser", "date": "2026-05-14", "montant": 115.0}, {"nom": "🛍️ Leclerc Sodibag — Petites courses", "date": "2026-05-13", "montant": 140.98}, {"nom": "🛍️ La Pipe d'Or — Tabac Montauban", "date": "2026-05-11", "montant": 18.55}, {"nom": "🐰 Jardiland — Courses lapin", "date": "2026-05-11", "montant": 27.96}, {"nom": "🛍️ Monoprix — Petites courses", "date": "2026-05-11", "montant": 38.18}, {"nom": "📌 Paiements antérieurs au 28/04", "date": "2026-04-27", "montant": 20.32}]}, "🏥 Santé": {"total": 107.99, "transactions": [{"nom": "💪 Distriprot — Bouteille d'eau salle de sport", "date": "2026-05-11", "montant": 1.99}, {"nom": "💇 KIU Institut — Coiffeur", "date": "2026-05-11", "montant": 106.0}]}, "⛽ Carburant": {"total": 86.82, "transactions": [{"nom": "⛽ Station Paya", "date": "2026-05-21", "montant": 1.3}, {"nom": "⛽ Carburant — PETROLEC-LECLERC Montauban", "date": "2026-05-11", "montant": 25.05}, {"nom": "⛽ Carburant — PETROLEC SUD Montauban", "date": "2026-05-06", "montant": 29.98}, {"nom": "⛽ Carburant — PETROLEC SUD Montauban", "date": "2026-04-30", "montant": 30.49}]}, "🎁 Divers": {"total": 76.99, "transactions": [{"nom": "🎁 Jardiland Montauban", "date": "2026-05-26", "montant": 6.99}, {"nom": "🎁 Virement Juliane Albiser", "date": "2026-05-26", "montant": 20.0}, {"nom": "🎁 Virement Juliane Albiser", "date": "2026-05-19", "montant": 50.0}]}, "🛡️ Assurance": {"total": 69.12, "transactions": [{"nom": "🛡️ MACIF (assurance)", "date": "2026-05-20", "montant": 8.0}, {"nom": "🛡️ MAIF — Assurance", "date": "2026-05-07", "montant": 61.12}]}, "📱 Abonnements": {"total": 62.47, "transactions": [{"nom": "📱 Amazon Prime", "date": "2026-05-26", "montant": 6.99}, {"nom": "📱 Google Play", "date": "2026-05-18", "montant": 10.4}, {"nom": "🤖 Claude — Abonnement Google Play", "date": "2026-05-15", "montant": 22.11}, {"nom": "🎮 Crunchyroll", "date": "2026-05-11", "montant": 6.99}, {"nom": "🎬 Netflix", "date": "2026-05-11", "montant": 7.99}, {"nom": "🎥 YouTube Premium", "date": "2026-05-04", "montant": 7.99}]}, "🍔 Alimentation": {"total": 54.69, "transactions": [{"nom": "🍔 Papaella (SumUp)", "date": "2026-05-26", "montant": 4.0}, {"nom": "🍔 McDonald's Seilh", "date": "2026-05-26", "montant": 10.35}, {"nom": "🍔 Cuisine Cherry Negre", "date": "2026-05-26", "montant": 20.0}, {"nom": "🍔 Domino's Pizza Montauban", "date": "2026-05-19", "montant": 1.89}, {"nom": "🥖 Fil'au Pain — Muret", "date": "2026-05-07", "montant": 6.45}, {"nom": "🍕 La Cave à Pizza", "date": "2026-05-05", "montant": 12.0}]}, "🚗 Transport": {"total": 38.55, "transactions": [{"nom": "🚗 Super Jet Montauban (lavage)", "date": "2026-05-27", "montant": 10.0}, {"nom": "🔧 Leclerc Audis — Centre auto Montauban", "date": "2026-05-11", "montant": 8.55}, {"nom": "🚗 Superjet Sapiac — Car wash", "date": "2026-05-06", "montant": 20.0}]}, "☕ Pause": {"total": 37.0, "transactions": [{"nom": "☕ Pauses café/snack — DA 47 & NYX Sodex", "date": "2026-05-28", "montant": 37.0}]}, "📞 Téléphonie": {"total": 34.98, "transactions": [{"nom": "📱 Bouygues Telecom", "date": "2026-05-13", "montant": 22.99}, {"nom": "📱 NRJ Mobile", "date": "2026-05-11", "montant": 11.99}]}, "🛣️ Péages": {"total": 34.9, "transactions": [{"nom": "🛣️ Péages autoroute ASF", "date": "2026-05-28", "montant": 9.3}, {"nom": "🛣️ Péages ASF", "date": "2026-05-13", "montant": 25.6}]}, "🏦 Crédit": {"total": 16.63, "transactions": [{"nom": "🏦 Younited Credit — Mensualité", "date": "2026-05-04", "montant": 16.63}]}, "🏦 Frais bancaires": {"total": 6.0, "transactions": [{"nom": "🏦 Cotisation bancaire — Offre Essentiel", "date": "2026-05-03", "montant": 6.0}]}}};
 
-// ── Color map ─────────────────────────────────────────────────────────────────
-const PRESET = {
-  "🛣️ Péages":           "#e67e22",
-  "🛒 Petites courses":             "#27ae60",
-  "☕ Pause":                             "#c0392b",
-  "🛒 Courses":                     "#2ecc71",
-  "🍔 Alimentation":                "#e74c3c",
-  "📱 Abonnements":                 "#9b59b6",
-  "🎭 Loisirs":                     "#3498db",
-  "👗 Shopping":                    "#e91e63",
-  "🏠 Logement":                    "#8d6e63",
-  "⛽ Carburant":                         "#ffa726",
-  "🛡️ Assurance":             "#78909c",
-  "📞 Téléphonie":        "#00bcd4",
-  "🏦 Crédit":                 "#ef5350",
-  "🏦 Frais bancaires":             "#9e9e9e",
-  "📚 Formation":                   "#66bb6a",
-  "🔄 Remboursement":               "#26a69a",
-  "💹 Épargne":                "#42a5f5",
-  "💰 Solde":                       "#66bb6a",
-  "🎁 Divers":                      "#78909c",
+// ── Palette ───────────────────────────────────────────────────────────────────
+const PAL={
+  "__src__":         "#4ade80",
+  "Péages":          "#fb923c",
+  "Petites courses": "#a3e635",
+  "Pause":           "#f87171",
+  "Courses":         "#34d399",
+  "Alimentation":    "#fbbf24",
+  "Abonnements":     "#c084fc",
+  "Loisirs":         "#60a5fa",
+  "Shopping":        "#f472b6",
+  "Logement":        "#a78bfa",
+  "Carburant":       "#fdba74",
+  "Assurance":       "#94a3b8",
+  "Téléphonie":      "#22d3ee",
+  "Crédit":          "#f87171",
+  "Frais bancaires": "#64748b",
+  "Formation":       "#86efac",
+  "Remboursement":   "#2dd4bf",
+  "Épargne":         "#38bdf8",
+  "Solde":           "#4ade80",
+  "Divers":          "#94a3b8",
 };
-const _cm = {};
-let   _ci = 0;
-function col(name) {
-  for (const k of Object.keys(PRESET)) {
-    if (name.includes(k.replace(/️/g,""))) return PRESET[k];
+const _EXT=["#f59e0b","#10b981","#6366f1","#ec4899","#14b8a6","#8b5cf6","#3b82f6","#ef4444","#e879f9","#2dd4bf"];
+let _ei=0; const _cm={};
+function col(name){
+  // Match palette key by stripping emojis and comparing bare text
+  const bare=name.replace(/[^\p{L}\p{N}\s]/gu,"").toLowerCase().trim();
+  for(const[k,v]of Object.entries(PAL)){
+    const kb=k.replace(/[^\p{L}\p{N}\s]/gu,"").toLowerCase().trim();
+    if(kb&&bare.includes(kb))return v;
   }
-  if (!_cm[name]) _cm[name] = d3.schemeTableau10[_ci++ % 10];
-  return _cm[name];
+  return _cm[name]||(_cm[name]=_EXT[_ei++%_EXT.length]);
 }
 
-function fmt(n) {
-  return n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function fmt(n){return n.toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function trunc(s,m){return s.length>m?s.slice(0,m-1)+"\u2026":s;}
+
+// ── SVG helpers ───────────────────────────────────────────────────────────────
+function svgEl(tag){return document.createElementNS("http://www.w3.org/2000/svg",tag);}
+function setA(el,a){for(const[k,v]of Object.entries(a))el.setAttribute(k,v);return el;}
+function mk(p,tag,a={},st={}){
+  const e=svgEl(tag);setA(e,a);
+  for(const[k,v]of Object.entries(st))e.style[k]=v;
+  p.appendChild(e);return e;
 }
-function trunc(s, max) { return s.length > max ? s.slice(0, max - 1) + "…" : s; }
+function mktxt(p,x,y,str,sz,fill,anchor="start"){
+  const e=mk(p,"text",{x,y,"font-size":sz,fill,"text-anchor":anchor,"dominant-baseline":"middle"});
+  e.textContent=str;return e;
+}
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let view = null; // null = global view, string = category name
-
-function goBack() { view = null; render(); }
+let view=null;
+function goBack(){view=null;render();}
 
 // ── Layout ────────────────────────────────────────────────────────────────────
-function layout(nodes, total, ih, minH) {
-  const gap = 6;
-  const totalGap = gap * (nodes.length - 1);
-  const avail = ih - totalGap;
+const GAP=14;
 
-  let items = nodes.map(n => ({ ...n, h: (n.value / total) * avail }));
-
-  // Enforce minimum height
-  let fixedSum = 0, flexSum = 0;
-  items = items.map(n => {
-    if (n.h < minH) { fixedSum += minH; return { ...n, h: minH, _fixed: true }; }
-    flexSum += n.h;
-    return { ...n, _fixed: false };
-  });
-  const flexAvail = avail - fixedSum;
-  if (flexAvail > 0 && flexSum > 0) {
-    const scale = flexAvail / flexSum;
-    items = items.map(n => n._fixed ? n : { ...n, h: n.h * scale });
-  }
-
-  let y = 0;
-  return items.map(n => { const r = { ...n, y }; y += n.h + gap; return r; });
+function layout(nodes,total,ih,minH){
+  const tg=GAP*(nodes.length-1),av=ih-tg;
+  let it=nodes.map(n=>({...n,h:(n.value/total)*av}));
+  let fx=0,fl=0;
+  it=it.map(n=>{if(n.h<minH){fx+=minH;return{...n,h:minH,_f:true};}fl+=n.h;return{...n,_f:false};});
+  const fa=av-fx;
+  if(fa>0&&fl>0){const sc=fa/fl;it=it.map(n=>n._f?n:{...n,h:n.h*sc});}
+  let y=0;return it.map(n=>{const r={...n,y};y+=n.h+GAP;return r;});
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
-const ML = 180, MR = 290, MT = 28, MB = 28, NW = 16;
+const ML=215,MR=310,MT=48,MB=48,NW=10;
 
-function render() {
-  const isG = (view === null);
-  document.getElementById("back").style.display = isG ? "none" : "inline-block";
+function render(){
+  const isG=view===null;
+  document.getElementById("back").style.display=isG?"none":"inline-block";
+  const{cycle,salaire,epargne,solde,categories}=DATA;
+  let srcLabel,srcColor,nodes;
 
-  const { cycle, salaire, epargne, solde, categories } = DATA;
-  let srcLabel, srcColor, nodes;
-
-  if (isG) {
-    const dep = salaire - epargne - Math.max(0, solde);
-    document.getElementById("ttl").textContent = "Budget — " + cycle;
-    document.getElementById("sub").textContent =
-      "Salaire : " + fmt(salaire) + " €  ·  " +
-      "Dépenses : " + fmt(dep) + " €  ·  " +
-      "Épargne : " + fmt(epargne) + " €";
-    srcLabel = "💹 Salaire";
-    srcColor = "#4caf50";
-    nodes = Object.entries(categories).map(([k, v]) => ({ name: k, value: v.total, clickable: true }));
-    nodes.sort((a, b) => b.value - a.value);
-    if (epargne > 0) nodes.push({ name: "💵 Épargne", value: epargne, clickable: false });
-    if (solde   > 0) nodes.push({ name: "💰 Solde",        value: solde,   clickable: false });
+  if(isG){
+    const dep=Object.values(categories).reduce((s,v)=>s+v.total,0);
+    document.getElementById("ttl").textContent="Budget \u2014 "+cycle;
+    document.getElementById("sub").textContent=
+      "Salaire "+fmt(salaire)+" \u20ac   \u00b7   D\u00e9penses "+fmt(dep)+" \u20ac   \u00b7   \u00c9pargne "+fmt(epargne)+" \u20ac";
+    srcLabel="Salaire"; srcColor=PAL["__src__"];
+    nodes=Object.entries(categories).map(([k,v])=>({name:k,value:v.total,clickable:true}));
+    nodes.sort((a,b)=>b.value-a.value);
+    if(epargne>0)nodes.push({name:"\U0001f499 \u00c9pargne",value:epargne,clickable:false});
+    if(solde>0)  nodes.push({name:"\U0001f4b0 Solde",        value:solde,  clickable:false});
   } else {
-    const cat = categories[view];
-    document.getElementById("ttl").textContent = view;
-    document.getElementById("sub").textContent =
-      cat.transactions.length + " transaction(s) · Total : " + fmt(cat.total) + " €";
-    srcLabel = view;
-    srcColor = col(view);
-    nodes = cat.transactions.map(tx => ({
-      name: tx.nom, value: tx.montant, sub: tx.date, clickable: false,
-    }));
+    const cat=categories[view];
+    document.getElementById("ttl").textContent=view;
+    document.getElementById("sub").textContent=
+      cat.transactions.length+" transactions   \u00b7   "+fmt(cat.total)+" \u20ac";
+    srcLabel=view; srcColor=col(view);
+    nodes=cat.transactions.map(tx=>({name:tx.nom,value:tx.montant,sub:tx.date,clickable:false}));
   }
 
-  const total = nodes.reduce((s, n) => s + n.value, 0);
-  if (!total) return;
+  const total=nodes.reduce((s,n)=>s+n.value,0);
+  if(!total)return;
 
-  const W    = window.innerWidth;
-  const minH = isG ? 8 : 18;
-  const minH_total = nodes.length * (minH + 6) + MT + MB + 40;
-  const H    = Math.max(window.innerHeight - 62, minH_total);
-  const IH   = H - MT - MB;
-  const IW   = W - ML - MR;
+  const W=window.innerWidth;
+  const minH=isG?8:22;
+  const minSvgH=nodes.length*(minH+GAP)+MT+MB+80;
+  const H=Math.max(800,minSvgH);
+  const IH=H-MT-MB,IW=W-ML-MR;
 
-  const sv = d3.select("#sv").attr("width", W).attr("height", H);
-  sv.selectAll("*").remove();
-  const g = sv.append("g").attr("transform", "translate(" + ML + "," + MT + ")");
+  const sv=document.getElementById("sv");
+  sv.setAttribute("width",W);sv.setAttribute("height",H);
+  while(sv.firstChild)sv.removeChild(sv.firstChild);
 
-  const laid = layout(nodes, total, IH, minH);
-  const tip  = document.getElementById("tip");
+  const defs=sv.appendChild(svgEl("defs"));
+  const g=mk(sv,"g",{transform:"translate("+ML+","+MT+")"});
+
+  const laid=layout(nodes,total,IH,minH);
+  const tip=document.getElementById("tip");
 
   // Source node
-  g.append("rect")
-    .attr("x", 0).attr("y", 0).attr("width", NW).attr("height", IH)
-    .attr("fill", srcColor).attr("rx", 3);
-  g.append("text")
-    .attr("x", -9).attr("y", IH / 2 - 7)
-    .attr("text-anchor", "end").attr("dominant-baseline", "middle")
-    .attr("fill", "#e0e0e0").attr("font-size", 13)
-    .text(srcLabel);
-  g.append("text")
-    .attr("x", -9).attr("y", IH / 2 + 9)
-    .attr("text-anchor", "end").attr("dominant-baseline", "middle")
-    .attr("fill", "#666").attr("font-size", 11)
-    .text(fmt(total) + " €");
+  mk(g,"rect",{x:0,y:0,width:NW,height:IH,fill:srcColor,rx:5});
+  mktxt(g,-16,IH/2-9,srcLabel,13,"rgba(255,255,255,.88)","end");
+  mktxt(g,-16,IH/2+9,fmt(total)+" \u20ac",11,"rgba(255,255,255,.32)","end");
 
-  // Links and right nodes
-  let sy = 0;
-  laid.forEach(nd => {
-    const c   = col(nd.name);
-    const lh  = (nd.value / total) * IH;
-    const rx  = IW, ry = nd.y, rh = nd.h, mx = IW / 2;
+  let sy=0;
+  laid.forEach((nd,i)=>{
+    const tgtC=isG?col(nd.name):srcColor;
+    const lh=(nd.value/total)*IH;
+    const rx=IW,ry=nd.y,rh=nd.h,mx=IW*0.44;
 
-    const path =
-      "M" + NW + "," + sy +
-      " C" + mx + "," + sy + " " + mx + "," + ry + " " + rx + "," + ry +
-      " L" + rx + "," + (ry + rh) +
-      " C" + mx + "," + (ry + rh) + " " + mx + "," + (sy + lh) + " " + NW + "," + (sy + lh) +
-      " Z";
-    sy += lh;
+    // Gradient source-color → target-color
+    const gid="g"+i;
+    const gr=defs.appendChild(setA(svgEl("linearGradient"),
+      {id:gid,gradientUnits:"userSpaceOnUse",x1:NW,y1:0,x2:rx,y2:0}));
+    setA(gr.appendChild(svgEl("stop")),{offset:"0%",  "stop-color":srcColor,"stop-opacity":"0.52"});
+    setA(gr.appendChild(svgEl("stop")),{offset:"100%","stop-color":tgtC,    "stop-opacity":"0.42"});
 
-    // Ribbon
-    const lk = g.append("path")
-      .attr("d", path)
-      .attr("fill", c)
-      .attr("fill-opacity", 0.3)
-      .style("cursor", nd.clickable ? "pointer" : "default")
-      .on("mousemove", function(ev) {
-        tip.style.opacity = 1;
-        tip.style.left = (ev.clientX + 12) + "px";
-        tip.style.top  = (ev.clientY - 38) + "px";
-        tip.innerHTML  =
-          "<b>" + nd.name + "</b>" +
-          (nd.sub ? "<br><span style='color:#888'>" + nd.sub + "</span>" : "") +
-          "<br>" + fmt(nd.value) + " €";
-      })
-      .on("mouseleave", function() { tip.style.opacity = 0; });
+    // Ribbon path
+    const path=
+      "M"+NW+","+sy+
+      " C"+mx+","+sy+" "+mx+","+ry+" "+rx+","+ry+
+      " L"+rx+","+(ry+rh)+
+      " C"+mx+","+(ry+rh)+" "+mx+","+(sy+lh)+" "+NW+","+(sy+lh)+" Z";
 
-    if (nd.clickable) {
-      lk.on("mouseenter", function() { d3.select(this).attr("fill-opacity", 0.55); })
-        .on("mouseleave", function() { d3.select(this).attr("fill-opacity", 0.3); tip.style.opacity = 0; })
-        .on("click", function() { view = nd.name; render(); });
-    }
+    const rib=mk(g,"path",{d:path,fill:"url(#"+gid+")"},
+      {cursor:nd.clickable?"pointer":"default"});
+
+    rib.addEventListener("mouseenter",()=>{rib.style.filter="brightness(1.5)";});
+    rib.addEventListener("mouseleave",()=>{rib.style.filter="";tip.style.opacity=0;});
+    rib.addEventListener("mousemove",ev=>{
+      tip.style.opacity=1;
+      tip.style.left=(ev.clientX+14)+"px";
+      tip.style.top=(ev.clientY-52)+"px";
+      tip.innerHTML=
+        "<span style=\"color:"+tgtC+";font-weight:600\">"+trunc(nd.name,28)+"</span>"+
+        (nd.sub?"<br><span style=\"color:rgba(255,255,255,.35);font-size:11px\">"+nd.sub+"</span>":"")+
+        "<br><span style=\"color:rgba(255,255,255,.85)\">"+fmt(nd.value)+" \u20ac</span>";
+    });
+    if(nd.clickable)rib.addEventListener("click",()=>{view=nd.name;render();});
+    sy+=lh;
 
     // Right node rect
-    const rct = g.append("rect")
-      .attr("x", rx).attr("y", ry)
-      .attr("width", NW).attr("height", Math.max(rh, 2))
-      .attr("fill", c).attr("rx", 3)
-      .style("cursor", nd.clickable ? "pointer" : "default");
-    if (nd.clickable) rct.on("click", function() { view = nd.name; render(); });
+    const rect=mk(g,"rect",{x:rx,y:ry,width:NW,height:Math.max(rh,2),fill:tgtC,rx:5},
+      {cursor:nd.clickable?"pointer":"default"});
+    if(nd.clickable)rect.addEventListener("click",()=>{view=nd.name;render();});
 
-    // Labels
-    const lby = ry + rh / 2;
-    const hasDate = !!nd.sub;
+    // Labels (two lines: name + amount/date)
+    const cy=ry+rh/2;
+    const lx=rx+NW+14;
+    const hasDate=!!nd.sub;
+    const y1=cy+(hasDate?-8:-6),y2=cy+(hasDate?8:7);
 
-    const lbl = g.append("text")
-      .attr("x", rx + NW + 8).attr("y", lby - (hasDate ? 7 : 0))
-      .attr("dominant-baseline", "middle")
-      .attr("fill", "#e0e0e0").attr("font-size", 12)
-      .style("cursor", nd.clickable ? "pointer" : "default")
-      .text(trunc(nd.name, 34));
-    if (nd.clickable) lbl.on("click", function() { view = nd.name; render(); });
+    const lbl=mktxt(g,lx,y1,trunc(nd.name,36),13,"rgba(255,255,255,.86)");
+    lbl.style.cursor=nd.clickable?"pointer":"default";
+    if(nd.clickable)lbl.addEventListener("click",()=>{view=nd.name;render();});
 
-    g.append("text")
-      .attr("x", rx + NW + 8).attr("y", lby + (hasDate ? 8 : 0))
-      .attr("dominant-baseline", "middle")
-      .attr("fill", "#666").attr("font-size", 10)
-      .text((nd.sub ? nd.sub + "  " : "") + fmt(nd.value) + " €");
+    mktxt(g,lx,y2,(nd.sub?nd.sub+"   ":"")+fmt(nd.value)+" \u20ac",11,"rgba(255,255,255,.3)");
   });
 }
 
-window.addEventListener("resize", render);
+window.addEventListener("resize",render);
 render();
 </script>
 </body>
